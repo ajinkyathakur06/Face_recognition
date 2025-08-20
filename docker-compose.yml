@@ -1,0 +1,16 @@
+version: '3.9'
+
+services:
+  attendance:
+    build: .
+    container_name: attendance_app
+    ports:
+      - "8000:8000" # Map host port 8000 to container 8000
+    volumes:
+      - static_volume:/app/static/images # Persist student images
+    environment:
+      - DEBUG=0
+    restart: unless-stopped
+
+volumes:
+  static_volume:
