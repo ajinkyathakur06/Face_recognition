@@ -1,0 +1,16 @@
+# Django database
+*.db
+*.sqlite3
+*.sqlite
+
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Logs
+*.log
+
+# Environment files
+.env
