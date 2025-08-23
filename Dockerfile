@@ -14,6 +14,7 @@ RUN apt-get update && apt-get install -y \
     libboost-all-dev \
     python3-dev \
     python3-distutils \
+    sqlite3 \
     && rm -rf /var/lib/apt/lists/*
 
 # Upgrade pip
@@ -30,4 +31,5 @@ COPY . /app/
 EXPOSE 8000
 
 # Run Django server
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+CMD ["sh", "-c", "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"]
+
