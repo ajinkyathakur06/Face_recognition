@@ -61,7 +61,7 @@ spec:
                 container('python') {
                     sh '''
                         python -m venv venv
-                        source venv/bin/activate
+                        . venv/bin/activate
                         pip install --upgrade pip
                         pip install pytest pytest-cov
                         pytest --maxfail=1 --disable-warnings --cov=. --cov-report=xml
