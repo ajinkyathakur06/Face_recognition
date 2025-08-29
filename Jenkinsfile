@@ -111,7 +111,7 @@ spec:
             steps {
                 container('kubectl') {
                     script {
-                        dir('ai-app-deployment') {
+                        dir('k8s-deployment') {
                             sh '''
                                 # Apply all resources in deployment YAML
                                 kubectl apply -f face-detection-deployment.yaml
