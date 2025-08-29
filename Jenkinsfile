@@ -6,11 +6,6 @@ apiVersion: v1
 kind: Pod
 spec:
   containers:
-  - name: python
-    image: python:3.8-slim-bullseye
-    command:
-    - cat
-    tty: true
   - name: sonar-scanner
     image: sonarsource/sonar-scanner-cli
     command:
@@ -71,13 +66,8 @@ spec:
             steps {
                 container('dind') {
                     sh '''
-                        docker run --rm face-detection:latest sh -c "
-                            python -m venv venv && \
-                            . venv/bin/activate && \
-                            pip install --upgrade pip && \
-                            pip install pytest pytest-cov && \
-                            pytest --maxfail=1 --disable-warnings --cov=. --cov-report=xml
-                        "
+                        docker run --rm face-detection:latest \
+                        pytest --maxfail=1 --disable-warnings --cov=. --cov-report=xml
                     '''
                 }
             }
