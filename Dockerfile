@@ -17,12 +17,13 @@ RUN apt-get update && apt-get install -y \
     sqlite3 \
     && rm -rf /var/lib/apt/lists/*
 
-# Upgrade pip
-RUN pip install --upgrade pip
-
 # Copy and install Python dependencies
 COPY requirements.txt /app/
-RUN pip install -r requirements.txt
+
+# Upgrade pip
+RUN pip install --upgrade pip \
+    && pip install -r requirements.txt \
+    && pip install pytest pytest-cov
 
 # Copy project files
 COPY . /app/
