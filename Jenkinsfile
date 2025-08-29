@@ -55,6 +55,7 @@ spec:
             steps {
                 container('dind') {
                     sh '''
+                        sleep 15
                         docker build -t face-detection:latest .
                         docker image ls
                     '''
