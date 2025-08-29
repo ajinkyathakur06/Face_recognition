@@ -56,19 +56,31 @@ spec:
     
     
     stages {
-        stage('Run Tests') {
+        stage('Build Docker Image') {
             steps {
-                container('python') {
+                container('dind') {
                     sh '''
-                        python -m venv venv
-                        . venv/bin/activate
-                        pip install --upgrade pip
-                        pip install pytest pytest-cov opencv-python
-                        pip install -r requirements.txt
-                        pytest --maxfail=1 --disable-warnings --cov=. --cov-report=xml
+                        docker build -t face-detection:latest .
+                        docker image ls
                     '''
                 }
-            }   
+            }
+        }
+
+        stage('Run Tests in Docker') {
+            steps {
+                container('dind') {
+                    sh '''
+                        docker run --rm face-detection:latest sh -c "
+                            python -m venv venv && \
+                            . venv/bin/activate && \
+                            pip install --upgrade pip && \
+                            pip install pytest pytest-cov && \
+                            pytest --maxfail=1 --disable-warnings --cov=. --cov-report=xml
+                        "
+                    '''
+                }
+            }
         }
         stage('SonarQube Analysis') {
             steps {
@@ -97,7 +109,7 @@ spec:
         stage('Build - Tag - Push') {
             steps {
                 container('dind') {
-                    sh 'docker build -t nexus-service-for-docker-hosted-registry.nexus.svc.cluster.local:8085/ajinkya-project/face-detection:v1 .'
+                    sh 'docker tag face-detection:latest nexus-service-for-docker-hosted-registry.nexus.svc.cluster.local:8085/ajinkya-project/face-detection:v1'
                     sh 'docker push nexus-service-for-docker-hosted-registry.nexus.svc.cluster.local:8085/ajinkya-project/face-detection:v1'
                     sh 'docker pull nexus-service-for-docker-hosted-registry.nexus.svc.cluster.local:8085/ajinkya-project/face-detection:v1'
                     sh 'docker image ls'
@@ -109,9 +121,13 @@ spec:
                 container('kubectl') {
                     script {
                         dir('ai-app-deployment') {
-                            sh 'kubectl get node'
-                            sh 'kubectl apply -f face-detection-deployment.yaml'
-                            sh 'kubectl rollout status'
+                            sh '''
+                                # Apply all resources in deployment YAML
+                                kubectl apply -f face-detection-deployment.yaml
+
+                                # Wait for rollout
+                                kubectl rollout status deployment/face-detection-deployment -n 2401199
+                            '''
                         }
                     }
                 }
