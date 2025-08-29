@@ -1,53 +1,120 @@
 pipeline {
-    agent any
-
-    environment {
-        IMAGE_NAME = "ajinkya06/face-recognition"
-        CONTAINER_NAME = "face-rec-container"
-        PORT = "8000"
+    agent {
+        kubernetes {
+            yaml '''
+apiVersion: v1
+kind: Pod
+spec:
+  containers:
+  - name: python
+    image: python:3.12-alpine
+    command:
+    - cat
+    tty: true
+  - name: sonar-scanner
+    image: sonarsource/sonar-scanner-cli
+    command:
+    - cat
+    tty: true
+  - name: kubectl
+    image: bitnami/kubectl:latest
+    command:
+    - cat
+    tty: true
+    securityContext:
+      runAsUser: 0
+      readOnlyRootFilesystem: false
+    env:
+    - name: KUBECONFIG
+      value: /kube/config        
+    volumeMounts:
+    - name: kubeconfig-secret
+      mountPath: /kube/config
+      subPath: kubeconfig
+  - name: dind
+    image: docker:dind
+    args: ["--registry-mirror=https://mirror.gcr.io", "--storage-driver=overlay2"]
+    securityContext:
+      privileged: true  # Needed to run Docker daemon
+    env:
+    - name: DOCKER_TLS_CERTDIR
+      value: ""  # Disable TLS for simplicity
+    volumeMounts:
+    - name: docker-config
+      mountPath: /etc/docker/daemon.json
+      subPath: daemon.json  # Mount the file directly here
+  volumes:
+  - name: docker-config
+    configMap:
+      name: docker-daemon-config
+  - name: kubeconfig-secret
+    secret:
+      secretName: kubeconfig-secret
+'''
+        }
     }
-
+    
+    
     stages {
-        stage('Checkout') {
+        stage('Run Tests') {
             steps {
-                // Pull latest code from GitHub
-                git branch: 'main', url: 'https://github.com/ajinkyathakur06/Face_recognition.git'
-            }
+                container('python') {
+                    sh '''
+                        python -m venv venv
+                        source venv/bin/activate
+                        pip install --upgrade pip
+                        pip install pytest pytest-cov
+                        pytest --maxfail=1 --disable-warnings --cov=. --cov-report=xml
+                    '''
+                }
+            }   
         }
-
-        stage('Pull Docker Image') {
+        stage('SonarQube Analysis') {
             steps {
-                script {
-                    sh "docker pull ${IMAGE_NAME}:latest"
+                container('sonar-scanner') {
+                     withCredentials([string(credentialsId: 'sonar-token-2401199', variable: 'SONAR_TOKEN')]) {
+                        sh '''
+                            sonar-scanner \
+                                -Dsonar.projectKey=2401199_attendance-system \
+                                -Dsonar.host.url=http://my-sonarqube-sonarqube.sonarqube.svc.cluster.local:9000 \
+                                -Dsonar.login=$SONAR_TOKEN \
+                                -Dsonar.python.coverage.reportPaths=coverage.xml
+                        '''
+                    }
                 }
             }
         }
-
-        stage('Stop & Remove Existing Container') {
+        stage('Login to Docker Registry') {
             steps {
-                script {
-                    sh """
-                    if [ \$(docker ps -a -q -f name=${CONTAINER_NAME}) ]; then
-                        docker stop ${CONTAINER_NAME} || true
-                        docker rm ${CONTAINER_NAME} || true
-                    fi
-                    """
+                container('dind') {
+                    sh 'docker --version'
+                    sh 'sleep 10'
+                    sh 'docker login nexus-service-for-docker-hosted-registry.nexus.svc.cluster.local:8085 -u admin -p Changeme@2025'
                 }
             }
         }
-
-        stage('Run Container') {
+        stage('Build - Tag - Push') {
             steps {
-                script {
-                    sh "docker run -d -p ${PORT}:8000 --name ${CONTAINER_NAME} ${IMAGE_NAME}:latest python manage.py runserver 0.0.0.0:8000"
+                container('dind') {
+                    sh 'docker build -t nexus-service-for-docker-hosted-registry.nexus.svc.cluster.local:8085/ajinkya-project/face-detection:v1 .'
+                    sh 'docker push nexus-service-for-docker-hosted-registry.nexus.svc.cluster.local:8085/ajinkya-project/face-detection:v1'
+                    sh 'docker pull nexus-service-for-docker-hosted-registry.nexus.svc.cluster.local:8085/ajinkya-project/face-detection:v1'
+                    sh 'docker image ls'
                 }
             }
         }
-    }
-
-    post {
-        always {
-            echo "Pipeline finished."
+        stage('Deploy AI Application') {
+            steps {
+                container('kubectl') {
+                    script {
+                        dir('ai-app-deployment') {
+                            sh 'kubectl get node'
+                            sh 'kubectl apply -f face-detection-deployment.yaml'
+                            sh 'sleep 99999'
+                        }
+                    }
+                }
+            }
         }
     }
 }

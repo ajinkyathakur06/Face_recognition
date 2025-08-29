@@ -1,0 +1,61 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: 2401199
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sqlite-pvc
+  namespace: 2401199
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi   # Adjust size if needed
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: face-detection-deployment
+  namespace: 2401199
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: face-detection
+  template:
+    metadata:
+      labels:
+        app: face-detection
+    spec:
+      imagePullSecrets:
+        - name: nexus-secret
+      containers:
+      - name: face-detection
+        image: 127.0.0.1:30085/ajinkya-project/face-detection:v1
+        ports:
+        - containerPort: 8501
+        volumeMounts:
+        - name: sqlite-data
+          mountPath: /app/db.sqlite3   # Where db.sqlite3 lives
+          subPath: db.sqlite3          # Ensure only this file is persisted
+      volumes:
+      - name: sqlite-data
+        persistentVolumeClaim:
+          claimName: sqlite-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: face-detection-service
+  namespace: 2401199
+spec:
+  selector:
+    app: face-detection
+  ports:
+    - protocol: TCP
+      port: 8501  # Service port
+      targetPort: 8501  # Container port
+  type: ClusterIP
