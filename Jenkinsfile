@@ -63,7 +63,8 @@ spec:
                         python -m venv venv
                         . venv/bin/activate
                         pip install --upgrade pip
-                        pip install pytest pytest-cov
+                        pip install pytest pytest-cov opencv-python
+                        pip install -r requirements.txt
                         pytest --maxfail=1 --disable-warnings --cov=. --cov-report=xml
                     '''
                 }
