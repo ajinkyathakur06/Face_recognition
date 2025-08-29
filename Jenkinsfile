@@ -7,7 +7,7 @@ kind: Pod
 spec:
   containers:
   - name: python
-    image: python:3.12-alpine
+    image: python:3.8-slim-bullseye
     command:
     - cat
     tty: true
@@ -110,7 +110,7 @@ spec:
                         dir('ai-app-deployment') {
                             sh 'kubectl get node'
                             sh 'kubectl apply -f face-detection-deployment.yaml'
-                            sh 'sleep 99999'
+                            sh 'kubectl rollout status'
                         }
                     }
                 }
