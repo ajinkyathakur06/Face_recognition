@@ -32,6 +32,13 @@ spec:
     spec:
       imagePullSecrets:
         - name: nexus-secret
+      initContainers:    # ✅ Added initContainer for permissions
+      - name: fix-permissions
+        image: busybox
+        command: ["sh", "-c", "mkdir -p /data && chmod -R 777 /data"]
+        volumeMounts:
+        - name: sqlite-data
+          mountPath: /data
       containers:
       - name: face-detection
         image: 127.0.0.1:30085/ajinkya-project/face-detection:v1
