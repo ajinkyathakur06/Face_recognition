@@ -1,18 +1,43 @@
-# # Django database
-# *.db
-# *.sqlite3
-# *.sqlite
+# Django database (local only)
+*.db
+*.sqlite3
+*.sqlite
 
-# # Python cache files
-# __pycache__/
-# *.pyc
-# *.pyo
-# *.pyd
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
 
-# # Logs
-# *.log
+# Logs
+*.log
 
-# # Environment files
-# .env
+# Virtual Environment
+venv/
+env/
+.venv/
+
+# Environment / secrets
+.env
+*.env
+
+# IDE files
+.vscode/
+.idea/
+
+# Build / packaging
+build/
+dist/
+*.egg-info/
+
+# Static / media collected results
+staticfiles/
+media/
+
+# Docker / Kubernetes artifacts
+*.pid
+docker-compose.override.yml
+
+# Project specific
 sonarqube.txt
 lakshithamdockerfile.txt
