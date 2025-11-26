@@ -17,7 +17,7 @@ spec:
         - name: nexus-secret
       containers:
         - name: face-detection
-          image: 127.0.0.1:30085/ajinkya-project/face-detection:v1
+          image: 127.0.0.1:30085/ajinkya-project/face-detection:v2
           ports:
             - containerPort: 8000
 
