@@ -7,7 +7,7 @@ WORKDIR /app
 # Install system dependencies 
 # Needed for OpenCV, dlib, face_recognition, mysqlclient, etc.
 # -------------------------------
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --fix-missing \
     build-essential \
     cmake \
     g++ \
