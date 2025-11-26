@@ -1,8 +1,12 @@
 FROM python:3.8-slim-bullseye
 
+# Working directory
 WORKDIR /app
 
-# Install system dependencies (needed for OpenCV, dlib, etc.)
+# -------------------------------
+# Install system dependencies 
+# Needed for OpenCV, dlib, face_recognition, mysqlclient, etc.
+# -------------------------------
 RUN apt-get update && apt-get install -y \
     build-essential \
     cmake \
@@ -14,23 +18,33 @@ RUN apt-get update && apt-get install -y \
     libboost-all-dev \
     python3-dev \
     python3-distutils \
-    sqlite3 \
+    default-libmysqlclient-dev \
+    && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy and install Python dependencies
+# -------------------------------
+# Install Python dependencies
+# -------------------------------
 COPY requirements.txt /app/
-
-# Upgrade pip
 RUN pip install --upgrade pip \
-    && pip install -r requirements.txt \
-    && pip install pytest pytest-cov
+    && pip install --no-cache-dir -r requirements.txt
 
+# -------------------------------
 # Copy project files
+# -------------------------------
 COPY . /app/
 
-# Expose Django port
+# -------------------------------
+# Collect static files (optional)
+# -------------------------------
+RUN python manage.py collectstatic --noinput || true
+
+# -------------------------------
+# Expose Django/Gunicorn Port
+# -------------------------------
 EXPOSE 8000
 
-# Run Django server
-CMD ["sh", "-c", "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"]
-
+# -------------------------------
+# Production Command
+# -------------------------------
+CMD ["sh", "-c", "python manage.py migrate && gunicorn Attendence_System.wsgi:application --bind 0.0.0.0:8000"]

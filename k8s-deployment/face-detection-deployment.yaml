@@ -4,16 +4,36 @@ metadata:
   name: "2401199"
 ---
 apiVersion: v1
+kind: Secret
+metadata:
+  name: mysql-secret
+  namespace: 2401199
+type: Opaque
+stringData:
+  DB_USER: "2401199_AJINKYA"
+  DB_PASSWORD: "PASSWORD123"
+  DB_NAME: "ajinkya_2401199"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-config
+  namespace: 2401199
+data:
+  DB_HOST: "my-mysql.mysql.svc.cluster.local"
+  DB_PORT: "3306"
+---
+apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: sqlite-pvc
-  namespace: "2401199"
+  name: static-pvc
+  namespace: 2401199
 spec:
   accessModes:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 1Gi   # Adjust size if needed
+      storage: 2Gi
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -32,26 +52,65 @@ spec:
     spec:
       imagePullSecrets:
         - name: nexus-secret
-      initContainers:    # ✅ Added initContainer for permissions
-      - name: fix-permissions
-        image: busybox
-        command: ["sh", "-c", "mkdir -p /data && chmod -R 777 /data"]
-        volumeMounts:
-        - name: sqlite-data
-          mountPath: /data
       containers:
       - name: face-detection
         image: 127.0.0.1:30085/ajinkya-project/face-detection:v1
         ports:
-        - containerPort: 8501
+          - containerPort: 8000
+        env:
+          - name: DB_USER
+            valueFrom:
+              secretKeyRef:
+                name: mysql-secret
+                key: DB_USER
+          - name: DB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: mysql-secret
+                key: DB_PASSWORD
+          - name: DB_NAME
+            valueFrom:
+              secretKeyRef:
+                name: mysql-secret
+                key: DB_NAME
+          - name: DB_HOST
+            valueFrom:
+              configMapKeyRef:
+                name: mysql-config
+                key: DB_HOST
+          - name: DB_PORT
+            valueFrom:
+              configMapKeyRef:
+                name: mysql-config
+                key: DB_PORT
+          - name: DEBUG
+            value: "0"
         volumeMounts:
-        - name: sqlite-data
-          mountPath: /app/db.sqlite3   # Where db.sqlite3 lives
-          subPath: db.sqlite3          # Ensure only this file is persisted
+          - name: static-media
+            mountPath: /app/static
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "512Mi"
+          limits:
+            cpu: "1"
+            memory: "1Gi"
       volumes:
-      - name: sqlite-data
-        persistentVolumeClaim:
-          claimName: sqlite-pvc
+        - name: static-media
+          persistentVolumeClaim:
+            claimName: static-pvc
 ---
 apiVersion: v1
 kind: Service
@@ -63,6 +122,6 @@ spec:
     app: face-detection
   ports:
     - protocol: TCP
-      port: 8501  # Service port
-      targetPort: 8501  # Container port
+      port: 8000
+      targetPort: 8000
   type: ClusterIP

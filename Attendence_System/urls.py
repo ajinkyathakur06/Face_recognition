@@ -19,8 +19,15 @@ from django.urls import path, include
 from django.conf.urls.static import static
 from django.conf import settings
 
+from django.http import HttpResponse
+
+
+def health(request):
+    return HttpResponse("OK")
+
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('health', health),
     path('', include('attendence_sys.urls'))
 
 ]
