@@ -28,7 +28,6 @@ spec:
       subPath: kubeconfig
   - name: dind
     image: docker:dind
-    args: ["--registry-mirror=https://mirror.gcr.io", "--storage-driver=overlay2"]
     securityContext:
       privileged: true  # Needed to run Docker daemon
     env:
