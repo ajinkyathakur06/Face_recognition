@@ -31,6 +31,8 @@ COPY requirements.txt /app/
 RUN pip install --upgrade pip \
     && pip install --no-cache-dir -r requirements.txt
 
+RUN pip install pytest pytest-cov
+
 # -------------------------------
 # Copy project files
 # -------------------------------
