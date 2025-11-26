@@ -10,3 +10,5 @@ mysqlclient
 python-dotenv
 cmake
 click
+pytest
+pytest-cov
