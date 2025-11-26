@@ -50,6 +50,62 @@ spec:
     
     
     stages {
+        stage('Build Docker Image') {
+            steps {
+                container('dind') {
+                    sh '''
+                        sleep 15
+                        docker build -t face-detection:latest .
+                        docker image ls
+                    '''
+                }
+            }
+        }
+
+        stage('Run Tests in Docker') {
+            steps {
+                container('dind') {
+                    sh '''
+                        docker run --rm face-detection:latest \
+                        pytest --maxfail=1 --disable-warnings --cov=. --cov-report=xml
+                    '''
+                }
+            }
+        }
+        stage('SonarQube Analysis') {
+            steps {
+                container('sonar-scanner') {
+                     withCredentials([string(credentialsId: 'sonar-token-2401199', variable: 'SONAR_TOKEN')]) {
+                        sh '''
+                            sonar-scanner \
+                                -Dsonar.projectKey=2401199_attendance-system \
+                                -Dsonar.host.url=http://my-sonarqube-sonarqube.sonarqube.svc.cluster.local:9000 \
+                                -Dsonar.login=$SONAR_TOKEN \
+                                -Dsonar.python.coverage.reportPaths=coverage.xml
+                        '''
+                    }
+                }
+            }
+        }
+        stage('Login to Docker Registry') {
+            steps {
+                container('dind') {
+                    sh 'docker --version'
+                    sh 'sleep 10'
+                    sh 'docker login nexus-service-for-docker-hosted-registry.nexus.svc.cluster.local:8085 -u admin -p Changeme@2025'
+                }
+            }
+        }
+        stage('Build - Tag - Push') {
+            steps {
+                container('dind') {
+                    sh 'docker tag face-detection:latest nexus-service-for-docker-hosted-registry.nexus.svc.cluster.local:8085/2401199-project/face-detection:latest'
+                    sh 'docker push nexus-service-for-docker-hosted-registry.nexus.svc.cluster.local:8085/2401199-project/face-detection:latest'
+                    sh 'docker pull nexus-service-for-docker-hosted-registry.nexus.svc.cluster.local:8085/2401199-project/face-detection:latest'
+                    sh 'docker image ls'
+                }
+            }
+        }
         
         stage('Deploy AI Application') {
             steps {
