@@ -1,10 +1,15 @@
+# -------------------------------
+# Base Image
+# -------------------------------
 FROM python:3.8-slim-bullseye
 
-# Working directory
+# -------------------------------
+# Set working directory
+# -------------------------------
 WORKDIR /app
 
 # -------------------------------
-# Install system dependencies 
+# Install system dependencies
 # Needed for OpenCV, face_recognition, mysqlclient, etc.
 # -------------------------------
 RUN apt-get update && apt-get install -y --fix-missing \
@@ -15,7 +20,7 @@ RUN apt-get update && apt-get install -y --fix-missing \
     libxext6 \
     libxrender1 \
     libglib2.0-0 \
-    libgl1 \ 
+    libgl1 \
     pkg-config \
     python3-dev \
     python3-distutils \
@@ -25,14 +30,12 @@ RUN apt-get update && apt-get install -y --fix-missing \
     && rm -rf /var/lib/apt/lists/*
 
 # -------------------------------
-# Install Python dependencies
+# Upgrade pip and install Python dependencies
 # -------------------------------
 COPY requirements.txt /app/
 RUN pip install --upgrade pip \
-    && pip install --no-cache-dir -r requirements.txt
-
-# Install test tools
-RUN pip install pytest pytest-cov
+    && pip install --no-cache-dir -r requirements.txt \
+    && pip install pytest pytest-cov gunicorn
 
 # -------------------------------
 # Copy project files
@@ -40,16 +43,17 @@ RUN pip install pytest pytest-cov
 COPY . /app/
 
 # -------------------------------
-# Collect static files (Optional)
+# Collect static files
 # -------------------------------
 RUN python manage.py collectstatic --noinput || true
 
 # -------------------------------
-# Expose Django/Gunicorn Port
+# Expose port
 # -------------------------------
 EXPOSE 8000
 
 # -------------------------------
-# Production Command
+# Production CMD
+# Apply migrations and start Gunicorn
 # -------------------------------
-CMD ["sh", "-c", "python manage.py migrate && gunicorn Attendence_System.wsgi:application --bind 0.0.0.0:8000"]
+CMD ["sh", "-c", "python manage.py migrate && exec gunicorn Attendence_System.wsgi:application --bind 0.0.0.0:8000"]
