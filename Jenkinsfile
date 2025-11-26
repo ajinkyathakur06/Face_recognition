@@ -99,9 +99,9 @@ spec:
         stage('Build - Tag - Push') {
             steps {
                 container('dind') {
-                    sh 'docker tag face-detection:latest nexus-service-for-docker-hosted-registry.nexus.svc.cluster.local:8085/ajinkya-project/face-detection:v1'
-                    sh 'docker push nexus-service-for-docker-hosted-registry.nexus.svc.cluster.local:8085/ajinkya-project/face-detection:v1'
-                    sh 'docker pull nexus-service-for-docker-hosted-registry.nexus.svc.cluster.local:8085/ajinkya-project/face-detection:v1'
+                    sh 'docker tag face-detection:latest nexus-service-for-docker-hosted-registry.nexus.svc.cluster.local:8085/2401199-project/face-detection:latest'
+                    sh 'docker push nexus-service-for-docker-hosted-registry.nexus.svc.cluster.local:8085/2401199-project/face-detection:latest'
+                    sh 'docker pull nexus-service-for-docker-hosted-registry.nexus.svc.cluster.local:8085/2401199-project/face-detection:latest'
                     sh 'docker image ls'
                 }
             }
