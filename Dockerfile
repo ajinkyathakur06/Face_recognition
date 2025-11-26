@@ -5,7 +5,7 @@ WORKDIR /app
 
 # -------------------------------
 # Install system dependencies 
-# Needed for OpenCV, dlib, face_recognition, mysqlclient, etc.
+# Needed for OpenCV, face_recognition, mysqlclient, etc.
 # -------------------------------
 RUN apt-get update && apt-get install -y --fix-missing \
     build-essential \
@@ -13,13 +13,13 @@ RUN apt-get update && apt-get install -y --fix-missing \
     g++ \
     libsm6 \
     libxext6 \
-    libxrender-dev \
+    libxrender1 \
     libglib2.0-0 \
-    libboost-all-dev \
+    libgl1 \ 
+    pkg-config \
     python3-dev \
     python3-distutils \
     default-libmysqlclient-dev \
-    pkg-config \
     libssl-dev \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
@@ -31,6 +31,7 @@ COPY requirements.txt /app/
 RUN pip install --upgrade pip \
     && pip install --no-cache-dir -r requirements.txt
 
+# Install test tools
 RUN pip install pytest pytest-cov
 
 # -------------------------------
@@ -39,7 +40,7 @@ RUN pip install pytest pytest-cov
 COPY . /app/
 
 # -------------------------------
-# Collect static files (optional)
+# Collect static files (Optional)
 # -------------------------------
 RUN python manage.py collectstatic --noinput || true
 
